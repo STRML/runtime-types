@@ -1,10 +1,8 @@
 // @flow
-var path = require('path')
-var validate = require('../src/validate')
+import path from 'path'
 import types from '../src'
-var {create, createAll, validateRegex, validateTypeOf} = types.validate
-import {ValidatorMap, Validator} from '../src/validate'
-import {PhoneNumber, User} from './example-types'
+import {PhoneNumber, User} from './example'
+import {create, createAll, validateRegex, validateTypeOf, ValidatorMap, Validator} from '../src/validate'
 
 var VALIDATORS:ValidatorMap = {
   PhoneNumber: validateRegex(/^\d{10}$/),
@@ -34,7 +32,7 @@ var sample:User = {
 
 // -------------------------------------
 
-var MyTypes = types.readFile(path.join(__dirname, '../test/example-types.js'))
+var MyTypes = types.readFile(path.join(__dirname, 'example.js.flow'))
 console.log(MyTypes.User.properties)
 
 // ------------------------------------
@@ -86,3 +84,6 @@ console.log(validators.Kiosk({
   },
   stuffs: {message: "HI"}
 }))
+
+export var aNum = 3
+export var aFunc = function() {}
