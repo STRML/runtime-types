@@ -1,12 +1,12 @@
 // @flow
 
-export type ObjectMap<T> = {[key: string]: T}
+export type ObjectMap<T> = {[key: string]: T};
 
 export type Property = {
   key: string;
   type: Type;
   optional?: boolean;
-}
+};
 
 export type Type = {
   name: string; // number, string, boolean, Post, User, Array
@@ -20,4 +20,4 @@ export type Type = {
 
   // only filled for generics, like Array<XX>
   params?: Array<Type>;
-}
+};
