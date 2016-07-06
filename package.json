@@ -1,6 +1,6 @@
 {
   "name": "runtime-types",
-  "version": "1.0.11-prerelease",
+  "version": "1.0.12-prerelease",
   "description": "Use flow type information at runtime. Useful for validations, mapping to an ORM, and more. ",
   "keywords": [
     "orm",
