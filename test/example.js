@@ -1,6 +1,6 @@
 // @flow
 import path from 'path'
-import types from '../src'
+import * as types from '../src'
 import type {PhoneNumber, User} from './example'
 import {create, createAll, validateRegex, validateTypeOf} from '../src/validate'
 import type {ValidatorMap, Validator} from '../src/validate';
