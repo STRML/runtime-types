@@ -5,7 +5,7 @@
 import type {Type, Property, ObjectMap} from './types'
 import {flatten, extend, constant, find} from 'lodash'
 
-export type Validator<T> = (value:T) => ValidationResult
+export type Validator = (value:*) => ValidationResult
 export type ValidationError = string;
 // either true, or a string with the error
 // use === true to test
