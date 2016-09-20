@@ -2,24 +2,24 @@
 
 // TODO FEATURE support nested objects
 
-import type {Type, Property, ObjectMap} from './types'
-import {flatten, extend, constant, find} from 'lodash'
+import type {Type, Property, ObjectMap} from './types';
+import {flatten, extend, constant, find} from 'lodash';
 
-export type Validator = (value:*) => ValidationResult
+export type Validator = (value:*) => ValidationResult;
 export type ValidationError = string;
 // either true, or a string with the error
 // use === true to test
 export type ValidationResult = boolean | ValidationError;
 
-export type ValidatorMap = {[key:string]:Validator}
+export type ValidatorMap = {[key:string]:Validator};
 
-export type ValidateObject = (value:Object) => Array<KeyedError>
+export type ValidateObject = (value:Object) => Array<KeyedError>;
 
 export type KeyedError = {
   key: string;
   value: string;
   error: ValidationError;
-}
+};
 
 type KeyedValidator = [string, Validator];
 

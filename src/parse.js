@@ -1,13 +1,11 @@
 // @flow
 // https://github.com/estree/estree/blob/master/spec.md
 
-var esprima = require('esprima-fb')
-var path = require('path')
-var lodash = require('lodash')
-var {assign, curry} = lodash
-var fs = require('fs')
+import esprima from 'esprima-fb';
+import {assign, curry} from 'lodash';
+import {readFileSync} from 'fs';
 
-import type {Type, Property, ObjectMap} from './types'
+import type {Type, Property, ObjectMap} from './types';
 
 
 //////////////////////////////////////////////////////////////
@@ -24,7 +22,7 @@ export function readFile(filepath:string):ObjectMap<Type> {
 }
 
 function parseFile(filepath:string):Tree {
-  var data = fs.readFileSync(filepath).toString()
+  let data = readFileSync(filepath).toString()
   // Strip 'declare export' statements from Flow 0.19, which aren't supported by esprima.
   // They're not useful to us anyway.
   data = data.replace(/declare export .*?(?:\n|$)/ig, '')
@@ -33,10 +31,10 @@ function parseFile(filepath:string):Tree {
 
 function findTypes(tree:Tree):ObjectMap<Type> {
   //console.log("DATA", tree.body)
-  var aliases:Array<?TypeAlias> = tree.body.map(function(s:$Subtype<AnySyntax>) {
+  const aliases:Array<?TypeAlias> = tree.body.map(function(s:$Subtype<AnySyntax>) {
 
     if (s.type == "ExportDeclaration") {
-      var ex:ExportDeclaration = (s : any)
+      const ex:ExportDeclaration = (s : any)
       s = ex.declaration
     }
 
@@ -54,7 +52,7 @@ function findTypes(tree:Tree):ObjectMap<Type> {
 }
 
 function toProperty(prop:TypeProperty):Property {
-  var p:any = {
+  const p:Object = {
     key: prop.key.name,
     type: toType(prop.value),
   }
@@ -185,21 +183,21 @@ function shortName(anno:TypeAnnotation):string {
 type Tree = {
   type: string;
   body: Array<AnySyntax>;
-}
+};
 
 type AnySyntax = TypeAlias | ExportDeclaration;
 
 type ExportDeclaration = {
   type: string;
   declaration: AnySyntax;
-}
+};
 
 type TypeAlias = {
   type: string;
   id: Identifier;
   typeParameters: ?TypeParameters;
   right: TypeAnnotation;
-}
+};
 
 type TypeProperty = {
   type: string; // ObjectTypeProperty
@@ -207,20 +205,20 @@ type TypeProperty = {
   value: TypeAnnotation;
   optional: boolean;
   // static: any;
-}
+};
 
 
 type TypeParameters = {
   type: 'TypeParameterInstantiation';
   params: Array<TypeAnnotation>;
-}
+};
 
 type Identifier = {
   type: 'Identifier';
   name: string;
   typeAnnotation: any; // undefined
   optional: any;       // undefined
-}
+};
 
 // -------------------------------------------------
 // annotations
@@ -230,32 +228,32 @@ type TypeAnnotation = ObjectTypeAnnotation | ValueTypeAnnotation | GenericTypeAn
 
 type ValueTypeAnnotation = {
   type: string; // StringTypeAnnotation, NumberTypeAnnotation
-}
+};
 
 type StringLiteralTypeAnnotation = {
   type: "StringLiteralTypeAnnotation";
   value: string;
   raw: string;
-}
+};
 
 type WrapperTypeAnnotation = {
   type: string;
   typeAnnotation: TypeAnnotation;
-}
+};
 
 type ObjectTypeAnnotation = {
   type: "ObjectTypeAnnotation";
   properties: Array<TypeProperty>;
   indexers?: Array<any>;
   callProperties?: Array<any>;
-}
+};
 
 // Array uses this
 type GenericTypeAnnotation = {
   type: string; // "GenericTypeAnnotation";
   id: Identifier;
   typeParameters: ?TypeParameters;
-}
+};
 
 //////////////////////////////////////////////////////////////////
 
@@ -276,6 +274,6 @@ type SyntaxTokens = {
   TypeofTypeAnnotation: string;
   UnionTypeAnnotation: string;
   VoidTypeAnnotation: string;
-}
+};
 
-var Syntax:SyntaxTokens  = esprima.Syntax
+const Syntax:SyntaxTokens = esprima.Syntax;
