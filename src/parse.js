@@ -1,9 +1,10 @@
 // @flow
 // https://github.com/estree/estree/blob/master/spec.md
 
-import esprima from 'esprima-fb';
+import {parse} from '@babel/parser';
 import {assign, curry} from 'lodash';
 import {readFileSync} from 'fs';
+import * as t from '@babel/types'
 
 import type {Type, Property, ObjectMap} from './types';
 
@@ -21,29 +22,33 @@ export function readFile(filepath:string):ObjectMap<Type> {
   return findTypes(parseFile(filepath))
 }
 
-function parseFile(filepath:string):Tree {
+function parseFile(filepath:string): BabelNodeFile {
   let data = readFileSync(filepath).toString()
-  // Strip 'declare export' statements from Flow 0.19, which aren't supported by esprima.
-  // They're not useful to us anyway.
-  data = data.replace(/declare export .*?(?:\n|$)/ig, '')
-  return esprima.parse(data.toString(), {tolerant:true})
+  return parse(data, {
+    allowImportExportEverywhere: true,
+    sourceType: "module",
+    plugins: [
+      "flow"
+    ]
+  });
 }
 
-function findTypes(tree:Tree):ObjectMap<Type> {
-  //console.log("DATA", tree.body)
-  const aliases:Array<?TypeAlias> = tree.body.map(function(s:$Subtype<AnySyntax>) {
+function findTypes(file:BabelNodeFile): ObjectMap<Type> {
+  console.log("DATA", file)
 
-    if (s.type == "ExportDeclaration") {
-      const ex:ExportDeclaration = (s : any)
-      s = ex.declaration
+  const aliases:Array<?BabelNodeTypeAlias> = file.program.body.map(function(s: BabelNodeStatement) {
+    let ex: any = s;
+    if (t.isExportNamedDeclaration(s) || t.isExportDefaultDeclaration(s)) {
+      // $FlowIgnore
+      ex = ex.declaration
     }
 
-    if (s.type == "TypeAlias") {
-      return s
+    if (t.isTypeAlias(ex)) {
+      return ex;
     }
   })
 
-  return aliases.reduce(function(values, alias:?TypeAlias) {
+  return aliases.reduce(function(values, alias:?BabelNodeTypeAlias) {
     if (alias) {
       values[alias.id.name] = toType(alias.right)
     }
@@ -51,7 +56,8 @@ function findTypes(tree:Tree):ObjectMap<Type> {
   }, {})
 }
 
-function toProperty(prop:TypeProperty):Property {
+function toProperty(prop: BabelNodeObjectTypeProperty): Property {
+  console.log(prop);
   const p:Object = {
     key: prop.key.name,
     type: toType(prop.value),
@@ -64,21 +70,21 @@ function toProperty(prop:TypeProperty):Property {
   return p
 }
 
-function toType(anno:TypeAnnotation):Type {
+function toType(anno: BabelNodeFlowType):Type {
 
-  if (anno.type === Syntax.ObjectTypeAnnotation) {
+  if (t.isObjectTypeAnnotation(anno)) {
     return objectType((anno : any))
   }
 
-  else if (anno.type === Syntax.GenericTypeAnnotation) {
+  else if (t.isGenericTypeAnnotation(anno)) {
     return genericType((anno : any))
   }
 
-  else if (anno.type === Syntax.NullableTypeAnnotation) {
+  else if (t.isNullableTypeAnnotation(anno)) {
     return nullableType((anno : any))
   }
 
-  else if (anno.type === Syntax.StringLiteralTypeAnnotation) {
+  else if (t.isStringLiteralTypeAnnotation(anno)) {
     return literalType((anno : any))
   }
 
@@ -88,7 +94,7 @@ function toType(anno:TypeAnnotation):Type {
 }
 
 //GenericTypeAnnotation
-function genericType(anno:GenericTypeAnnotation):Type {
+function genericType(anno: BabelNodeGenericTypeAnnotation):Type {
   var type = (emptyType(anno.id.name) : any)
 
   if (anno.typeParameters) {
@@ -98,19 +104,19 @@ function genericType(anno:GenericTypeAnnotation):Type {
   return type
 }
 
-function objectType(anno:ObjectTypeAnnotation):Type {
+function objectType(anno:BabelNodeObjectTypeAnnotation):Type {
   var type = (emptyType('Object') : any)
   type.properties = anno.properties.map(toProperty)
   return type
 }
 
-function nullableType(anno:WrapperTypeAnnotation):Type {
+function nullableType(anno:BabelNodeNullableTypeAnnotation):Type {
   var type = toType(anno.typeAnnotation)
   type.nullable = true
   return type
 }
 
-function literalType(anno:StringLiteralTypeAnnotation):Type {
+function literalType(anno:BabelNodeStringLiteralTypeAnnotation):Type {
   var type = valueType(anno)
   type.literal = anno.value
   return type
@@ -132,7 +138,7 @@ function literalType(anno:StringLiteralTypeAnnotation):Type {
 //TypeAnnotation
 //TypeofTypeAnnotation
 
-function valueType(anno:TypeAnnotation):Type {
+function valueType(anno:BabelNodeFlowType):Type {
   var type = emptyType(shortName(anno))
   return (type : any)
 }
@@ -143,137 +149,23 @@ function emptyType(name:string):Type {
   }
 }
 
-function shortName(anno:TypeAnnotation):string {
+function shortName(anno:BabelNodeFlowType):string {
 
-  if (anno.type === Syntax.StringTypeAnnotation) {
+  if (t.isStringTypeAnnotation(anno)) {
     return 'string'
   }
 
-  else if (anno.type === Syntax.NumberTypeAnnotation) {
+  else if (t.isNumberTypeAnnotation(anno)) {
     return 'number'
   }
 
-  else if (anno.type === Syntax.BooleanTypeAnnotation) {
+  else if (t.isBooleanTypeAnnotation(anno)) {
     return 'boolean'
   }
 
-  else if (anno.type === Syntax.AnyTypeAnnotation) {
+  else if (t.isAnyTypeAnnotation(anno)) {
     return 'any'
   }
 
   return anno.type.replace('TypeAnnotation', '')
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-//////////////////////////////////////////////////////////////
-// Type description of what esprima returns
-//////////////////////////////////////////////////////////////
-
-type Tree = {
-  type: string;
-  body: Array<AnySyntax>;
-};
-
-type AnySyntax = TypeAlias | ExportDeclaration;
-
-type ExportDeclaration = {
-  type: string;
-  declaration: AnySyntax;
-};
-
-type TypeAlias = {
-  type: string;
-  id: Identifier;
-  typeParameters: ?TypeParameters;
-  right: TypeAnnotation;
-};
-
-type TypeProperty = {
-  type: string; // ObjectTypeProperty
-  key: Identifier;
-  value: TypeAnnotation;
-  optional: boolean;
-  // static: any;
-};
-
-
-type TypeParameters = {
-  type: 'TypeParameterInstantiation';
-  params: Array<TypeAnnotation>;
-};
-
-type Identifier = {
-  type: 'Identifier';
-  name: string;
-  typeAnnotation: any; // undefined
-  optional: any;       // undefined
-};
-
-// -------------------------------------------------
-// annotations
-
-// use an intersection type so I don't have to cast later
-type TypeAnnotation = ObjectTypeAnnotation | ValueTypeAnnotation | GenericTypeAnnotation | WrapperTypeAnnotation | StringLiteralTypeAnnotation;
-
-type ValueTypeAnnotation = {
-  type: string; // StringTypeAnnotation, NumberTypeAnnotation
-};
-
-type StringLiteralTypeAnnotation = {
-  type: "StringLiteralTypeAnnotation";
-  value: string;
-  raw: string;
-};
-
-type WrapperTypeAnnotation = {
-  type: string;
-  typeAnnotation: TypeAnnotation;
-};
-
-type ObjectTypeAnnotation = {
-  type: "ObjectTypeAnnotation";
-  properties: Array<TypeProperty>;
-  indexers?: Array<any>;
-  callProperties?: Array<any>;
-};
-
-// Array uses this
-type GenericTypeAnnotation = {
-  type: string; // "GenericTypeAnnotation";
-  id: Identifier;
-  typeParameters: ?TypeParameters;
-};
-
-//////////////////////////////////////////////////////////////////
-
-type SyntaxTokens = {
-  AnyTypeAnnotation: string;
-  ArrayTypeAnnotation: string;
-  BooleanTypeAnnotation: string;
-  FunctionTypeAnnotation: string;
-  GenericTypeAnnotation: string;
-  IntersectionTypeAnnotation: string;
-  NullableTypeAnnotation: string;
-  NumberTypeAnnotation: string;
-  ObjectTypeAnnotation: string;
-  StringLiteralTypeAnnotation: string;
-  StringTypeAnnotation: string;
-  TupleTypeAnnotation: string;
-  TypeAnnotation: string;
-  TypeofTypeAnnotation: string;
-  UnionTypeAnnotation: string;
-  VoidTypeAnnotation: string;
-};
-
-const Syntax:SyntaxTokens = esprima.Syntax;

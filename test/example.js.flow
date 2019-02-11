@@ -1,12 +1,12 @@
 // @flow
-export type PhoneNumber = string
+export type PhoneNumber = string;
 
 export type User = {
   username: string;
   age: number;
   phone: PhoneNumber;
   created: ?Date;
-}
+};
 
 export type Kiosk = {
   mac_address: string;
@@ -15,9 +15,14 @@ export type Kiosk = {
   stuffs: {
     message: string;
   }
-}
+};
 
-// Flow 0.19 syntax, should be automatically stripped from file as not to
-// confuse esprima.
-declare export var aNum: number
-declare export var aFunc: Function
+// Broken in esprima, works in babel
+// export type MergedObject = {
+//   ...$Exact<User>,
+//   ...$Exact<Kiosk>,
+// };
+
+// Broken in esprima, works in babel
+declare export var aNum: number;
+declare export var aFunc: Function;

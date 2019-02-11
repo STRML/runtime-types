@@ -1,9 +1,24 @@
 [ignore]
-.*node_modules/babel.*
-.*node_modules/y18n.*
+<PROJECT_ROOT>/build/.*
+# Handled in interfaces/, these typedefs are wrong so far in babel 7
+.*/@babel/.*
 
 [include]
+src/
 
 [libs]
+interfaces/
+
+[lints]
+all=off
 
 [options]
+suppress_comment=.*\\$FlowFixMe.*
+suppress_comment=.*\\$FlowBug.*
+suppress_comment=.*\\$FlowIgnore.*
+suppress_comment=\\(.\\|\n\\)*\\$FlowNewLine.*
+suppress_comment=\\(.\\|\n\\)*\\$FlowIssue
+suppress_type=$FlowFixMe
+# Treat _-prefixed props as private
+munge_underscores=true
+include_warnings=true
